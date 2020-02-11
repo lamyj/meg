@@ -1,6 +1,6 @@
 import sys
 
-from . import library
+from . import converters, library
 
 def setup(matlab_root):
     sys.modules[__name__].matlab_root = matlab_root
