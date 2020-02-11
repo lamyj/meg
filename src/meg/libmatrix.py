@@ -251,6 +251,9 @@ api = {
 }
 
 from meg import matlab_root
-lib = ctypes.CDLL(
-    next((pathlib.Path(matlab_root)/"bin"/"glnxa64").glob("libmx.*")))
 library.set_api(lib, api, sys.modules[__name__])
+try:
+    path = next((pathlib.Path(matlab_root)/"bin"/"glnxa64").glob("libmx.*"))
+except StopIteration:
+    path = next((pathlib.Path(matlab_root)/"bin"/"maci64").glob("libmx.*"))
+lib = ctypes.CDLL(path)
