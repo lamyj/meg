@@ -36,7 +36,10 @@ class TestLibrary(unittest.TestCase):
     def test_error(self):
         def on_error(result, func, arguments):
             raise RuntimeError("")
-        meg.library.set_api(self.libc, self.api, on_error=on_error)
+        api = {
+            "atoi": [[ctypes.c_char_p], ctypes.c_int, on_error]
+        }
+        meg.library.set_api(self.libc, api)
         with self.assertRaises(RuntimeError):
             self.libc.atoi(b"hello")
 

@@ -10,16 +10,6 @@ c_char_p_p = ctypes.POINTER(c_char_p)
 c_double_p = ctypes.POINTER(c_double)
 c_int_p = ctypes.POINTER(c_int)
 
-def on_error(result, func, arguments):
-    if (
-            (isinstance(result, int) and result == 0)
-            or (hasattr(func.restype, "_type_") and result is None)
-        ):
-        raise RuntimeError(
-            "MATLAB API function {}{} failed: {}".format(
-                func.__name__, arguments, result))
-    return result
-
 ############
 # matrix.h #
 ############
@@ -80,9 +70,10 @@ api = {
     "mxIsNumeric": [[mxArray_p], c_bool],
     "mxIsComplex": [[mxArray_p], c_bool],
     "mxGetNumberOfDimensions": [[mxArray_p], mwSize],
-    "mxGetElementSize": [[mxArray_p], c_size_t],
+    "mxGetElementSize": [[mxArray_p], c_size_t], # WARNING: Behavior changed in R2018a
     "mxGetDimensions": [[mxArray_p], mwSize_p],
-    "mxSetDimensions": [[mxArray_p, mwSize_p, mwSize], c_int],
+    "mxSetDimensions": 
+        [[mxArray_p, mwSize_p, mwSize], c_int, library.fail_on_non_zero],
     "mxGetNumberOfElements": [[mxArray_p], c_size_t],
     "mxCalcSingleSubscript": [[mxArray_p, mwSize, mwIndex_p], mwIndex],
     "mxGetM": [[mxArray_p], c_size_t],
@@ -97,24 +88,25 @@ api = {
     ########################################
 
     # Numeric types
-    "mxCreateDoubleMatrix": [[mwSize, mwSize, mxComplexity], mxArray_p],
-    "mxCreateDoubleScalar": [[c_double], mxArray_p],
+    "mxCreateDoubleMatrix": 
+        [[mwSize, mwSize, mxComplexity], mxArray_p, library.fail_on_zero],
+    "mxCreateDoubleScalar": [[c_double], mxArray_p, library.fail_on_zero],
     "mxCreateNumericMatrix": 
-        [[mwSize, mwSize, mxClassID, mxComplexity], mxArray_p],
+        [[mwSize, mwSize, mxClassID, mxComplexity], mxArray_p, library.fail_on_zero],
     "mxCreateNumericArray": 
-        [[mwSize, mwSize_p, mxClassID, mxComplexity], mxArray_p],
+        [[mwSize, mwSize_p, mxClassID, mxComplexity], mxArray_p, library.fail_on_zero],
     "mxCreateUninitNumericMatrix": 
-        [[mwSize, mwSize, mxClassID, mxComplexity], mxArray_p],
+        [[mwSize, mwSize, mxClassID, mxComplexity], mxArray_p, library.fail_on_zero],
     "mxCreateUninitNumericArray": 
-        [[mwSize, mwSize_p, mxClassID, mxComplexity], mxArray_p],
+        [[mwSize, mwSize_p, mxClassID, mxComplexity], mxArray_p, library.fail_on_zero],
 
     # Noncomplex Float
     "mxIsScalar": [[mxArray_p], c_bool],
     "mxGetScalar": [[mxArray_p], c_double],
     "mxIsDouble": [[mxArray_p], c_bool], # mxGetDoubles, mxSetDoubles: >= R2018a
     "mxIsSingle": [[mxArray_p], c_bool], # mxGetSingles, mxSetSingles: >= R2018a
-    "mxGetPr": [[mxArray_p], c_double_p],
-    "mxSetPr": [[mxArray_p, c_double_p], None],
+    "mxGetPr": [[mxArray_p], c_double_p, library.fail_on_zero], # WARNING: Behavior changed in R2018a
+    "mxSetPr": [[mxArray_p, c_double_p], None], # WARNING: Behavior changed in R2018a
     
     # Noncomplex Integer
     "mxIsInt8": [[mxArray_p], c_bool], # mxGetInt8s, mxSetInt8s: >= R2018a
@@ -129,10 +121,10 @@ api = {
     # Complex Float
     # mxGetComplexDoubles, mxSetComplexDoubles: >= R2018a
     # mxGetComplexSingles, mxSetComplexSingles: >= R2018a
-    "mxGetImagData": [[mxArray_p], c_void_p],
-    "mxSetImagData": [[mxArray_p, c_void_p], None],
-    "mxGetPi": [[mxArray_p], c_double_p],
-    "mxSetPi": [[mxArray_p, c_double_p], None],
+    "mxGetImagData": [[mxArray_p], c_void_p, library.fail_on_zero], # WARNING: Behavior changed in R2018a
+    "mxSetImagData": [[mxArray_p, c_void_p], None], # WARNING: Behavior changed in R2018a
+    "mxGetPi": [[mxArray_p], c_double_p, library.fail_on_zero], # WARNING: Behavior changed in R2018a
+    "mxSetPi": [[mxArray_p, c_double_p], None], # WARNING: Behavior changed in R2018a
     
     # Complex Integer
     # mxGetComplexInt8s, mxSetComplexInt8s: >= R2018a
@@ -145,63 +137,72 @@ api = {
     # mxGetComplexUint64s, mxSetComplexUint64s: >= R2018a
     
     # Sparse
-    "mxCreateSparse": [[mwSize, mwSize, mwSize, mxComplexity], mxArray_p],
-    "mxCreateSparseLogicalMatrix": [[mwSize, mwSize, mwSize], mxArray_p],
+    "mxCreateSparse": 
+        [[mwSize, mwSize, mwSize, mxComplexity], mxArray_p, library.fail_on_zero],
+    "mxCreateSparseLogicalMatrix": 
+        [[mwSize, mwSize, mwSize], mxArray_p, library.fail_on_zero],
     "mxIsSparse": [[mxArray_p], c_bool],
     "mxGetNzmax": [[mxArray_p], mwSize],
     "mxSetNzmax": [[mxArray_p, mwSize], None],
-    "mxGetIr": [[mxArray_p], mwIndex],
+    "mxGetIr": [[mxArray_p], mwIndex_p, library.fail_on_zero],
     "mxSetIr": [[mxArray_p, mwIndex], None],
-    "mxGetJc": [[mxArray_p], mwIndex],
+    "mxGetJc": [[mxArray_p], mwIndex_p, library.fail_on_zero],
     "mxSetJc": [[mxArray_p, mwIndex], None],
 
     # Nonnumeric Types
-    "mxGetData": [[mxArray_p], c_void_p],
-    "mxSetData": [[mxArray_p, c_void_p], None],
+    "mxGetData": [[mxArray_p], c_void_p, library.fail_on_zero], # WARNING: Behavior changed in R2018a
+    "mxSetData": [[mxArray_p, c_void_p], None], # WARNING: Behavior changed in R2018a
     
     # Character
-    "mxCreateString": [[c_char_p], mxArray_p],
-    "mxCreateCharMatrixFromStrings": [[mwSize, c_char_p], mxArray_p],
-    "mxCreateCharArray": [[mwSize, mwSize_p], mxArray_p],
+    "mxCreateString": [[c_char_p], mxArray_p, library.fail_on_zero],
+    "mxCreateCharMatrixFromStrings": 
+        [[mwSize, c_char_p], mxArray_p, library.fail_on_zero],
+    "mxCreateCharArray": [[mwSize, mwSize_p], mxArray_p, library.fail_on_zero],
     "mxIsChar": [[mxArray_p], c_bool],
-    "mxGetChars": [[mxArray_p], mxChar_p],
+    "mxGetChars": [[mxArray_p], mxChar_p, library.fail_on_zero],
     
     # Logical
     "mxIsLogical": [[mxArray_p], c_bool],
     "mxIsLogicalScalar": [[mxArray_p], c_bool],
     "mxIsLogicalScalarTrue": [[mxArray_p], c_bool],
-    "mxCreateLogicalArray": [[mwSize, mwSize_p], mxArray_p],
-    "mxCreateLogicalMatrix": [[mwSize, mwSize], mxArray_p],
-    "mxCreateLogicalScalar": [[mxLogical], mxArray_p],
+    "mxCreateLogicalArray": [[mwSize, mwSize_p], mxArray_p, library.fail_on_zero],
+    "mxCreateLogicalMatrix": [[mwSize, mwSize], mxArray_p, library.fail_on_zero],
+    "mxCreateLogicalScalar": [[mxLogical], mxArray_p, library.fail_on_zero],
     "mxGetLogicals": [[mxArray_p], mxLogical_p],
     
     # Object
     "mxIsClass": [[mxArray_p, c_char_p], c_bool],
     "mxGetClassID": [[mxArray_p], mxClassID],
     "mxGetClassName": [[mxArray_p], c_char_p],
-    "mxSetClassName": [[mxArray_p, c_char_p], c_int],
-    "mxGetProperty": [[mxArray_p, mwIndex, c_char_p], mxArray_p],
+    "mxSetClassName": [[mxArray_p, c_char_p], c_int, library.fail_on_non_zero],
+    "mxGetProperty": 
+        [[mxArray_p, mwIndex, c_char_p], mxArray_p, library.fail_on_zero],
     "mxSetProperty": [[mxArray_p, mwIndex, c_char_p, mxArray_p], None],
     
     # Structure
-    "mxCreateStructMatrix": [[mwSize, mwSize, c_int_p, c_char_p_p], mxArray_p],
-    "mxCreateStructArray":  [[mwSize, mwSize_p, c_int_p, c_char_p_p], mxArray_p],
+    "mxCreateStructMatrix": 
+        [[mwSize, mwSize, c_int_p, c_char_p_p], mxArray_p, library.fail_on_zero],
+    "mxCreateStructArray":  
+        [[mwSize, mwSize_p, c_int_p, c_char_p_p], mxArray_p, library.fail_on_zero],
     "mxIsStruct": [[mxArray_p], c_bool],
-    "mxGetField": [[mxArray_p, mwIndex, c_char_p], mxArray_p],
+    "mxGetField": 
+        [[mxArray_p, mwIndex, c_char_p], mxArray_p, library.fail_on_zero],
     "mxSetField": [[mxArray_p, mwIndex, c_char_p, mxArray_p], None],
     "mxGetNumberOfFields": [[mxArray_p], c_int],
-    "mxGetFieldNameByNumber": [[mxArray_p, c_int], c_char_p],
-    "mxGetFieldNumber": [[mxArray_p, c_char_p], c_int],
-    "mxGetFieldByNumber": [[mxArray_p, mwIndex, c_int], mxArray_p],
+    "mxGetFieldNameByNumber": 
+        [[mxArray_p, c_int], c_char_p, library.fail_on_zero],
+    "mxGetFieldNumber": 
+        [[mxArray_p, c_char_p], c_int, library.fail_on_minus_one],
+    "mxGetFieldByNumber": [[mxArray_p, mwIndex, c_int], mxArray_p, library.fail_on_zero],
     "mxSetFieldByNumber": [[mxArray_p, mwIndex, c_int, mxArray_p], None],
-    "mxAddField": [[mxArray_p, c_char_p], c_int],
+    "mxAddField": [[mxArray_p, c_char_p], c_int, library.fail_on_minus_one],
     "mxRemoveField": [[mxArray_p, c_int], None],
     
     # Cell
-    "mxCreateCellMatrix": [[mwSize, mwSize], mxArray_p],
-    "mxCreateCellArray": [[mwSize, mwSize_p], mxArray_p],
+    "mxCreateCellMatrix": [[mwSize, mwSize], mxArray_p, library.fail_on_zero],
+    "mxCreateCellArray": [[mwSize, mwSize_p], mxArray_p, library.fail_on_zero],
     "mxIsCell": [[mxArray_p], c_bool],
-    "mxGetCell": [[mxArray_p, mwIndex], mxArray_p],
+    "mxGetCell": [[mxArray_p, mwIndex], mxArray_p, library.fail_on_zero],
     "mxSetCell": [[mxArray_p, mwIndex, mxArray_p], None],
     
     ################################
@@ -209,7 +210,7 @@ api = {
     ################################
     
     "mxDestroyArray": [[mxArray_p], None],
-    "mxDuplicateArray": [[mxArray_p], mxArray_p],
+    "mxDuplicateArray": [[mxArray_p], mxArray_p, library.fail_on_zero],
     
     ###################
     # Convert mxArray #
@@ -219,17 +220,18 @@ api = {
     # mxMakeArrayComplex, mxMakeArrayReal: >= R2018a
     
     # Character
-    "mxArrayToString": [[mxArray_p], c_char_p],
-    "mxArrayToUTF8String": [[mxArray_p], c_char_p], # >= R2015a
-    "mxGetString": [[mxArray_p, c_char_p, mwSize], c_int],
+    "mxArrayToString": [[mxArray_p], c_char_p, library.fail_on_zero],
+    "mxArrayToUTF8String": [[mxArray_p], c_char_p, library.fail_on_zero], # >= R2015a
+    "mxGetString": 
+        [[mxArray_p, c_char_p, mwSize], c_int, library.fail_on_non_zero],
     
     ##########################
     # Data Memory Management #
     ##########################
     
-    "mxCalloc": [[mwSize, mwSize], c_void_p],
-    "mxMalloc": [[mwSize], c_void_p],
-    "mxRealloc": [[c_void_p, mwSize], c_void_p],
+    "mxCalloc": [[mwSize, mwSize], c_void_p, library.fail_on_zero],
+    "mxMalloc": [[mwSize], c_void_p, library.fail_on_zero],
+    "mxRealloc": [[c_void_p, mwSize], c_void_p, library.fail_on_zero],
     "mxFree": [[c_void_p], None],
     
     ###########
@@ -251,4 +253,4 @@ api = {
 from meg import matlab_root
 lib = ctypes.CDLL(
     next((pathlib.Path(matlab_root)/"bin"/"glnxa64").glob("libmx.*")))
-library.set_api(lib, api, sys.modules[__name__], on_error)
+library.set_api(lib, api, sys.modules[__name__])
