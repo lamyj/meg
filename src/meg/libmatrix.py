@@ -10,6 +10,16 @@ c_char_p_p = ctypes.POINTER(c_char_p)
 c_double_p = ctypes.POINTER(c_double)
 c_int_p = ctypes.POINTER(c_int)
 
+def on_error(result, func, arguments):
+    if (
+            (isinstance(result, int) and result == 0)
+            or (hasattr(func.restype, "_type_") and result is None)
+        ):
+        raise RuntimeError(
+            "MATLAB API function {}{} failed: {}".format(
+                func.__name__, arguments, result))
+    return result
+
 ############
 # matrix.h #
 ############
@@ -241,4 +251,4 @@ api = {
 from meg import matlab_root
 lib = ctypes.CDLL(
     next((pathlib.Path(matlab_root)/"bin"/"glnxa64").glob("libmx.*")))
-library.set_api(lib, api, sys.modules[__name__])
+library.set_api(lib, api, sys.modules[__name__], on_error)

@@ -34,7 +34,9 @@ class TestLibrary(unittest.TestCase):
             self.assertEqual(self.module.atoi(12345))
     
     def test_error(self):
-        meg.library.set_api(self.libc, self.api)
+        def on_error(result, func, arguments):
+            raise RuntimeError("")
+        meg.library.set_api(self.libc, self.api, on_error=on_error)
         with self.assertRaises(RuntimeError):
             self.libc.atoi(b"hello")
 
