@@ -32,9 +32,9 @@ api = {
 }
 
 from meg import matlab_root
-library.set_api(lib, api, sys.modules[__name__])
 try:
     path = next((pathlib.Path(matlab_root)/"bin"/"glnxa64").glob("libeng.*"))
 except StopIteration:
     path = next((pathlib.Path(matlab_root)/"bin"/"maci64").glob("libeng.*"))
 lib = ctypes.CDLL(path)
+library.set_api(lib, api, sys.modules[__name__], ["_730"])

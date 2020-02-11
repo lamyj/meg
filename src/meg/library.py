@@ -1,6 +1,6 @@
 import ctypes
 
-def set_api(library, api, module=None):
+def set_api(library, api, module=None, suffixes=None):
     """ Assign arguments and result types to library functions and, if 
         specified, set them as top-level objects in the given module.
     """
@@ -11,8 +11,16 @@ def set_api(library, api, module=None):
             on_error = None
         else:
             argtypes, restype, on_error = item
-        
-        function = getattr(library, name)
+        function = None
+        for suffix in [""]+(suffixes or []):
+            try:
+                function = getattr(library, "{}{}".format(name, suffix))
+            except AttributeError:
+                pass
+            else:
+                break
+        if function is None:
+            print("WARNING: no such symbol in {}: {}".format(library, name))
         function.argtypes = argtypes
         function.restype = restype
         if on_error is not None:
