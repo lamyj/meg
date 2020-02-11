@@ -1,4 +1,4 @@
-from ctypes import c_int
+import ctypes
 
 def set_api(library, api, module=None):
     """ Assign arguments and result types to library functions and, if 
@@ -16,7 +16,8 @@ def set_api(library, api, module=None):
 
 def on_error(result, func, arguments):
     if (
-            isinstance(result, int) and result == 0
+            (isinstance(result, int) and result == 0)
+            or (hasattr(func.restype, "_type_") and result is None)
         ):
         raise RuntimeError(
             "MATLAB API function {}{} failed: {}".format(
