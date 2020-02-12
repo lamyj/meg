@@ -1,6 +1,8 @@
-# MEG: a MATLAB engine connector in Python
+# Meg: a MATLAB engine connector in Python
 
-MEG is a Python module to interface with the MATLAB engine, allowing to transfer data between Python and MATLAB, and to call MATLAB code from Python.
+![PyPI - Wheel](https://img.shields.io/pypi/wheel/meg)
+
+Meg is a Python module to interface with the MATLAB engine, allowing to transfer data between Python and MATLAB, and to call MATLAB code from Python.
 
 ```python
 import meg
