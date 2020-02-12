@@ -74,3 +74,50 @@ def to_python(source):
         result = source
     
     return result
+
+def to_matlab(source):
+    # WARNING: the module must be imported *after* the setup has taken place.
+    from .libmatrix import (
+        ClassID, Complexity, 
+        mwSize, mxCreateLogicalArray, mxCreateNumericArray, mxCreateString, 
+        mxGetData, mxGetImagData)
+    
+    array = numpy.array(source, ndmin=2)
+    kind = array.dtype.kind
+    numbers = ["i", "u", "f", "c"]
+    
+    if kind in numbers:
+        class_ids = {
+            "complex128": ClassID.DOUBLE, "complex64": ClassID.SINGLE,
+            "float64": ClassID.DOUBLE, "float32": ClassID.SINGLE,
+            "int8": ClassID.INT8, "uint8": ClassID.UINT8,
+            "int16": ClassID.INT16, "uint16": ClassID.UINT16,
+            "int32": ClassID.INT32, "uint32": ClassID.UINT32,
+            "int64": ClassID.INT64, "uint64": ClassID.UINT64,
+        }
+        class_id = class_ids[source.dtype.name]
+        
+        complexity = Complexity.COMPLEX if kind == "c" else Complexity.REAL
+        
+        result = mxCreateNumericArray(
+            array.ndim, array.ctypes.shape_as(mwSize), class_id, complexity)
+        
+        data = mxGetData(result)
+        buffer_ = array.real.tobytes("F")
+        ctypes.memmove(data, buffer_, len(buffer_))
+
+        if complexity:
+            data = mxGetImagData(result)
+            buffer_ = array.imag.tobytes("F")
+            ctypes.memmove(data, buffer_, len(buffer_))
+    elif isinstance(source, (str, bytes)):
+        result = mxCreateString(source)
+    elif kind == "b":
+        result = mxCreateLogicalArray(array.ndim, array.ctypes.shape_as(mwSize))
+        data = mxGetData(result)
+        buffer_ = array.real.tobytes("F")
+        ctypes.memmove(data, buffer_, len(buffer_))
+    else:
+        raise NotImplementedError("Cannot convert {}".format(src))
+    
+    return result

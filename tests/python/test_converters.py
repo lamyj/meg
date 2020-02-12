@@ -127,6 +127,107 @@ class TestToPython(unittest.TestCase):
         self.assertEqual(m.dtype, bool)
         numpy.testing.assert_array_equal(
             m, [[True, False, False], [False, False, True]])
+
+class TestToMATLAB(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.engine = meg.libengine.engOpen(None)
     
+    @classmethod
+    def tearDownClass(cls):
+        meg.libengine.engClose(cls.engine)
+    
+    def test_scalar_real(self):
+        types = [
+            numpy.double, numpy.single,
+            numpy.int8, numpy.uint8,
+            numpy.int16, numpy.uint16,
+            numpy.int32, numpy.uint32,
+            numpy.int64, numpy.uint64,
+        ]
+        for type_ in types:
+            p_1 = type_(42)
+            m = meg.converters.to_matlab(p_1)
+            p_2 = meg.converters.to_python(m)
+            
+            self.assertEqual(p_1.shape, p_2.shape)
+            self.assertEqual(p_1.dtype, p_2.dtype)
+            numpy.testing.assert_array_almost_equal(p_1, p_2)
+    
+    def test_scalar_complex(self):
+        types = [numpy.complex128, numpy.complex64]
+        for type_ in types:
+            p_1 = type_(4+2j)
+            m = meg.converters.to_matlab(p_1)
+            p_2 = meg.converters.to_python(m)
+            
+            self.assertEqual(p_1.shape, p_2.shape)
+            self.assertEqual(p_1.dtype, p_2.dtype)
+            numpy.testing.assert_array_almost_equal(p_1, p_2)
+    
+    def test_scalar_bytes(self):
+        p_1 = b"hello"
+        m = meg.converters.to_matlab(p_1)
+        p_2 = meg.converters.to_python(m)
+        
+        self.assertEqual(p_1.decode(), p_2)
+    
+    def test_scalar_str(self):
+        p_1 = "hëllo"
+        m = meg.converters.to_matlab(p_1.encode())
+        p_2 = meg.converters.to_python(m)
+        
+        self.assertEqual(p_1, p_2)
+    
+    def test_scalar_logical(self):
+        p_1 = True
+        m = meg.converters.to_matlab(p_1)
+        p_2 = meg.converters.to_python(m)
+        
+        self.assertEqual(p_1, p_2)
+    
+    def test_array_real(self):
+        types = [
+            numpy.double, numpy.single,
+            numpy.int8, numpy.uint8,
+            numpy.int16, numpy.uint16,
+            numpy.int32, numpy.uint32,
+            numpy.int64, numpy.uint64,
+        ]
+        for type_ in types:
+            p_1 = numpy.array(
+                [[0,3,6,9,12], [1,4,7,10,13], [2,5,8,11,14]], type_)
+            m = meg.converters.to_matlab(p_1)
+            p_2 = meg.converters.to_python(m)
+            
+            self.assertEqual(p_1.shape, p_2.shape)
+            self.assertEqual(p_1.dtype, p_2.dtype)
+            numpy.testing.assert_array_almost_equal(p_1, p_2)
+    
+    def test_array_complex(self):
+        types = [numpy.complex128, numpy.complex64]
+        for type_ in types:
+            p_1 = numpy.array(
+                [
+                    [0+1j, 3+4j, 6+7j,  9+10j, 12+13j], 
+                    [1+2j, 4+5j, 7+8j, 10+11j, 13+14j], 
+                    [2+3j, 5+6j, 8+9j, 11+12j, 14+15j]],
+                type_)
+            m = meg.converters.to_matlab(p_1)
+            p_2 = meg.converters.to_python(m)
+            
+            self.assertEqual(p_1.shape, p_2.shape)
+            self.assertEqual(p_1.dtype, p_2.dtype)
+            numpy.testing.assert_array_almost_equal(p_1, p_2)
+    
+    def test_array_logical(self):
+        p_1 = numpy.array([[True, False, False], [False, False, True]])
+        m = meg.converters.to_matlab(p_1)
+        p_2 = meg.converters.to_python(m)
+        
+        self.assertEqual(p_1.shape, p_2.shape)
+        self.assertEqual(p_1.dtype, p_2.dtype)
+        numpy.testing.assert_array_equal(p_1, p_2)
+
 if __name__ == "__main__":
     unittest.main()
