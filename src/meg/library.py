@@ -21,6 +21,7 @@ def set_api(library, api, module=None, suffixes=None):
                 break
         if function is None:
             print("WARNING: no such symbol in {}: {}".format(library, name))
+            continue
         function.argtypes = argtypes
         function.restype = restype
         if on_error is not None:

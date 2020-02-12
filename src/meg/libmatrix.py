@@ -1,5 +1,10 @@
 import ctypes
-from ctypes import c_bool, c_char, c_char_p, c_double, c_int, c_size_t, c_void_p
+from ctypes import (
+    c_bool, c_char, c_char_p, c_double, c_float, c_int, 
+    c_int8, c_int16, c_int32, c_int64,
+    c_size_t, 
+    c_uint8, c_uint16, c_uint32, c_uint64,
+    c_void_p)
 import enum
 import pathlib
 import sys
@@ -8,7 +13,16 @@ from . import library
 
 c_char_p_p = ctypes.POINTER(c_char_p)
 c_double_p = ctypes.POINTER(c_double)
+c_float_p = ctypes.POINTER(c_float)
 c_int_p = ctypes.POINTER(c_int)
+c_int8_p = ctypes.POINTER(c_int8)
+c_int16_p = ctypes.POINTER(c_int16)
+c_int32_p = ctypes.POINTER(c_int32)
+c_int64_p = ctypes.POINTER(c_int64)
+c_uint8_p = ctypes.POINTER(c_uint8)
+c_uint16_p = ctypes.POINTER(c_uint16)
+c_uint32_p = ctypes.POINTER(c_uint32)
+c_uint64_p = ctypes.POINTER(c_uint64)
 
 ############
 # matrix.h #
@@ -42,6 +56,46 @@ class ClassID(enum.IntEnum):
 # https://www.mathworks.com/help/matlab/apiref/mxchar.html
 mxChar = c_char
 mxChar_p = ctypes.POINTER(mxChar)
+
+class mxComplexDouble(ctypes.Structure):
+    _fields_ = [("real", c_double), ("imag", c_double)]
+mxComplexDouble_p = ctypes.POINTER(mxComplexDouble)
+
+class mxComplexSingle(ctypes.Structure):
+    _fields_ = [("real", c_float), ("imag", c_float)]
+mxComplexSingle_p = ctypes.POINTER(mxComplexSingle)
+
+class mxComplexInt8(ctypes.Structure):
+    _fields_ = [("real", c_int8), ("imag", c_int8)]
+mxComplexInt8_p = ctypes.POINTER(mxComplexInt8)
+
+class mxComplexInt16(ctypes.Structure):
+    _fields_ = [("real", c_int16), ("imag", c_int16)]
+mxComplexInt16_p = ctypes.POINTER(mxComplexInt16)
+
+class mxComplexInt32(ctypes.Structure):
+    _fields_ = [("real", c_int32), ("imag", c_int32)]
+mxComplexInt32_p = ctypes.POINTER(mxComplexInt32)
+
+class mxComplexInt64(ctypes.Structure):
+    _fields_ = [("real", c_int64), ("imag", c_int64)]
+mxComplexInt64_p = ctypes.POINTER(mxComplexInt64)
+
+class mxComplexUint8(ctypes.Structure):
+    _fields_ = [("real", c_uint8), ("imag", c_uint8)]
+mxComplexUint8_p = ctypes.POINTER(mxComplexUint8)
+
+class mxComplexUint16(ctypes.Structure):
+    _fields_ = [("real", c_uint16), ("imag", c_uint16)]
+mxComplexUint16_p = ctypes.POINTER(mxComplexUint16)
+
+class mxComplexUint32(ctypes.Structure):
+    _fields_ = [("real", c_uint32), ("imag", c_uint32)]
+mxComplexUint32_p = ctypes.POINTER(mxComplexUint32)
+
+class mxComplexUint64(ctypes.Structure):
+    _fields_ = [("real", c_uint64), ("imag", c_uint64)]
+mxComplexUint64_p = ctypes.POINTER(mxComplexUint64)
 
 # https://www.mathworks.com/help/matlab/apiref/mxcomplexity.html
 mxComplexity = c_int
@@ -103,38 +157,79 @@ api = {
     # Noncomplex Float
     "mxIsScalar": [[mxArray_p], c_bool],
     "mxGetScalar": [[mxArray_p], c_double],
-    "mxIsDouble": [[mxArray_p], c_bool], # mxGetDoubles, mxSetDoubles: >= R2018a
-    "mxIsSingle": [[mxArray_p], c_bool], # mxGetSingles, mxSetSingles: >= R2018a
+    "mxIsDouble": [[mxArray_p], c_bool],
+    "mxGetDoubles": [[mxArray_p], c_double_p, library.fail_on_zero],
+    "mxSetDoubles": [[mxArray_p, c_double_p], c_int, library.fail_on_zero],
+    "mxGetSingles": [[mxArray_p], c_float_p, library.fail_on_zero],
+    "mxSetSingles": [[mxArray_p, c_float_p], c_int, library.fail_on_zero],
     "mxGetPr": [[mxArray_p], c_double_p, library.fail_on_zero], # WARNING: Behavior changed in R2018a
     "mxSetPr": [[mxArray_p, c_double_p], None], # WARNING: Behavior changed in R2018a
     
     # Noncomplex Integer
-    "mxIsInt8": [[mxArray_p], c_bool], # mxGetInt8s, mxSetInt8s: >= R2018a
-    "mxIsUint8": [[mxArray_p], c_bool], # mxGetUint8s, mxSetUint8s: >= R2018a
-    "mxIsInt16": [[mxArray_p], c_bool], # mxGetInt16s, mxSetInt16s: >= R2018a
-    "mxIsUint16": [[mxArray_p], c_bool], # mxGetUint16s, mxSetUint16s: >= R2018a
-    "mxIsInt32": [[mxArray_p], c_bool], # mxGetInt32s, mxSetInt32s: >= R2018a
-    "mxIsUint32": [[mxArray_p], c_bool], # mxGetUint32s, mxSetUint32s: >= R2018a
-    "mxIsInt64": [[mxArray_p], c_bool], # mxGetInt64s, mxSetInt64s: >= R2018a
-    "mxIsUint64": [[mxArray_p], c_bool], # mxGetUint64s, mxSetUint64s: >= R2018a
+    "mxIsInt8": [[mxArray_p], c_bool],
+    "mxGetInt8s": [[mxArray_p], c_int8_p, library.fail_on_zero],
+    "mxSetInt8s": [[mxArray_p, c_int8_p], c_int, library.fail_on_zero],
+    "mxIsUint8": [[mxArray_p], c_bool],
+    "mxGetUint8s": [[mxArray_p], c_uint8_p, library.fail_on_zero],
+    "mxSetUint8s": [[mxArray_p, c_uint8_p], c_int, library.fail_on_zero],
+    "mxIsInt16": [[mxArray_p], c_bool],
+    "mxGetInt16s": [[mxArray_p], c_int16_p, library.fail_on_zero],
+    "mxSetInt16s": [[mxArray_p, c_int16_p], c_int, library.fail_on_zero],
+    "mxIsUint16": [[mxArray_p], c_bool],
+    "mxGetUint16s": [[mxArray_p], c_uint16_p, library.fail_on_zero],
+    "mxSetUint16s": [[mxArray_p, c_uint16_p], c_int, library.fail_on_zero],
+    "mxIsInt32": [[mxArray_p], c_bool],
+    "mxGetInt32s": [[mxArray_p], c_int32_p, library.fail_on_zero],
+    "mxSetInt32s": [[mxArray_p, c_int32_p], c_int, library.fail_on_zero],
+    "mxIsUint32": [[mxArray_p], c_bool],
+    "mxGetUint32s": [[mxArray_p], c_uint32_p, library.fail_on_zero],
+    "mxSetUint32s": [[mxArray_p, c_uint32_p], c_int, library.fail_on_zero],
+    "mxIsInt64": [[mxArray_p], c_bool],
+    "mxGetInt64s": [[mxArray_p], c_int64_p, library.fail_on_zero],
+    "mxSetInt64s": [[mxArray_p, c_int64_p], c_int, library.fail_on_zero],
+    "mxIsUint64": [[mxArray_p], c_bool],
+    "mxGetUint64s": [[mxArray_p], c_uint64_p, library.fail_on_zero],
+    "mxSetUint64s": [[mxArray_p, c_uint64_p], c_int, library.fail_on_zero],
     
     # Complex Float
-    # mxGetComplexDoubles, mxSetComplexDoubles: >= R2018a
-    # mxGetComplexSingles, mxSetComplexSingles: >= R2018a
+    "mxGetComplexDoubles": 
+        [[mxArray_p], mxComplexDouble_p, library.fail_on_zero],
+    "mxSetComplexDoubles": 
+        [[mxArray_p, mxComplexDouble_p], c_int, library.fail_on_zero],
+    "mxGetComplexSingles": 
+        [[mxArray_p], mxComplexSingle_p, library.fail_on_zero],
+    "mxSetComplexSingles": 
+        [[mxArray_p, mxComplexSingle_p], c_int, library.fail_on_zero],
     "mxGetImagData": [[mxArray_p], c_void_p, library.fail_on_zero], # WARNING: Behavior changed in R2018a
     "mxSetImagData": [[mxArray_p, c_void_p], None], # WARNING: Behavior changed in R2018a
     "mxGetPi": [[mxArray_p], c_double_p, library.fail_on_zero], # WARNING: Behavior changed in R2018a
     "mxSetPi": [[mxArray_p, c_double_p], None], # WARNING: Behavior changed in R2018a
     
     # Complex Integer
-    # mxGetComplexInt8s, mxSetComplexInt8s: >= R2018a
-    # mxGetComplexUint8s, mxSetComplexUint8s: >= R2018a
-    # mxGetComplexInt16s, mxSetComplexInt16s: >= R2018a
-    # mxGetComplexUint16s, mxSetComplexUint16s: >= R2018a
-    # mxGetComplexInt32s, mxSetComplexInt32s: >= R2018a
-    # mxGetComplexUint32s, mxSetComplexUint32s: >= R2018a
-    # mxGetComplexInt64s, mxSetComplexInt64s: >= R2018a
-    # mxGetComplexUint64s, mxSetComplexUint64s: >= R2018a
+    "mxGetComplexInt8s": [[mxArray_p], mxComplexInt8_p, library.fail_on_zero],
+    "mxSetComplexInt8s": 
+        [[mxArray_p, mxComplexInt8_p], c_int, library.fail_on_zero],
+    "mxGetComplexUint8s": [[mxArray_p], mxComplexUint8_p, library.fail_on_zero],
+    "mxSetComplexUint8s": 
+        [[mxArray_p, mxComplexUint8_p], c_int, library.fail_on_zero],
+    "mxGetComplexInt16s": [[mxArray_p], mxComplexInt16_p, library.fail_on_zero],
+    "mxSetComplexInt16s": 
+        [[mxArray_p, mxComplexInt16_p], c_int, library.fail_on_zero],
+    "mxGetComplexUint16s": [[mxArray_p], mxComplexUint16_p, library.fail_on_zero],
+    "mxSetComplexUint16s": 
+        [[mxArray_p, mxComplexUint16_p], c_int, library.fail_on_zero],
+    "mxGetComplexInt32s": [[mxArray_p], mxComplexInt32_p, library.fail_on_zero],
+    "mxSetComplexInt32s": 
+        [[mxArray_p, mxComplexInt32_p], c_int, library.fail_on_zero],
+    "mxGetComplexUint32s": [[mxArray_p], mxComplexUint32_p, library.fail_on_zero],
+    "mxSetComplexUint32s": 
+        [[mxArray_p, mxComplexUint32_p], c_int, library.fail_on_zero],
+    "mxGetComplexInt64s": [[mxArray_p], mxComplexInt64_p, library.fail_on_zero],
+    "mxSetComplexInt64s": 
+        [[mxArray_p, mxComplexInt64_p], c_int, library.fail_on_zero],
+    "mxGetComplexUint64s": [[mxArray_p], mxComplexUint64_p, library.fail_on_zero],
+    "mxSetComplexUint64s": 
+        [[mxArray_p, mxComplexUint64_p], c_int, library.fail_on_zero],
     
     # Sparse
     "mxCreateSparse": 
@@ -256,4 +351,4 @@ try:
 except StopIteration:
     path = next((pathlib.Path(matlab_root)/"bin"/"maci64").glob("libmx.*"))
 lib = ctypes.CDLL(path)
-library.set_api(lib, api, sys.modules[__name__], ["_730"])
+library.set_api(lib, api, sys.modules[__name__], ["_730", "_800"])

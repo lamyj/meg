@@ -35,22 +35,21 @@ class TestConverters(unittest.TestCase):
     
     def test_scalar_complex(self):
         types = [
-            "double", "single",
-            "int8", "uint8",
-            "int16", "uint16",
-            "int32", "uint32",
-            "int64", "uint64",
+            ("double", numpy.complex128), ("single", numpy.complex64),
+            ("int8", numpy.complex128), ("uint8", numpy.complex128),
+            ("int16", numpy.complex128), ("uint16", numpy.complex128),
+            ("int32", numpy.complex128), ("uint32", numpy.complex128),
+            ("int64", numpy.complex128), ("uint64", numpy.complex128),
         ]
-        for type_ in types:
+        for type_m, type_p in types:
             meg.libengine.engEvalString(
-                self.engine, "m = cast(4+2*i, '{}')".format(type_).encode())
+                self.engine, "m = cast(4+2*i, '{}')".format(type_m).encode())
             m = meg.libengine.engGetVariable(self.engine, b"m")
             m = meg.converters.to_python(m)
             
             self.assertEqual(m.shape, ())
-            # FIXME: access to imaginary data and dtype
-            # self.assertEqual(m.dtype, getattr(numpy, type_))
-            # self.assertEqual(m, 4+2j)
+            self.assertEqual(m.dtype, type_p)
+            self.assertEqual(m, 4+2j)
     
     def test_scalar_bytes(self):
         meg.libengine.engEvalString(self.engine, b"m = 'hello'")
