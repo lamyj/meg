@@ -228,6 +228,14 @@ class TestToMATLAB(unittest.TestCase):
         self.assertEqual(p_1.shape, p_2.shape)
         self.assertEqual(p_1.dtype, p_2.dtype)
         numpy.testing.assert_array_equal(p_1, p_2)
-
+    
+    def test_list(self):
+        p_1 = [1, 2, 3]
+        m = meg.converters.to_matlab(p_1)
+        p_2 = meg.converters.to_python(m)
+        
+        self.assertEqual(numpy.atleast_2d(p_1).dtype, p_2.dtype)
+        numpy.testing.assert_array_equal(numpy.atleast_2d(p_1), p_2)
+    
 if __name__ == "__main__":
     unittest.main()

@@ -95,7 +95,7 @@ def to_matlab(source):
             "int32": ClassID.INT32, "uint32": ClassID.UINT32,
             "int64": ClassID.INT64, "uint64": ClassID.UINT64,
         }
-        class_id = class_ids[source.dtype.name]
+        class_id = class_ids[array.dtype.name]
         
         complexity = Complexity.COMPLEX if kind == "c" else Complexity.REAL
         
