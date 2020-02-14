@@ -5,7 +5,6 @@ import unittest
 import sys
 
 import meg
-meg.setup(os.environ["MATLAB_ROOT"])
 
 class TestLibmatrix(unittest.TestCase):
     def test(self):

@@ -4,7 +4,6 @@ import unittest
 import numpy
 
 import meg
-meg.setup(os.environ["MATLAB_ROOT"])
 
 class TestEngine(unittest.TestCase):
     def test_open_close(self):
