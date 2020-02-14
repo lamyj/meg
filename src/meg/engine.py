@@ -39,6 +39,14 @@ class Engine(object):
         return self.libengine.engPutVariable(
             self._engine, name.encode(), converters.to_matlab(value))
     
+    def update(self, *args, **kwargs):
+        if args:
+            dict_ = dict(args[0])
+        else:
+            dict_ = kwargs
+        for name, value in dict_.items():
+            self.put(name, value)
+    
     def __setitem__(self, name, value):
         self.put(name, value)
     
