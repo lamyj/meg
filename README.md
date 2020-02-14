@@ -23,6 +23,4 @@ with meg.Engine() as engine:
     print(engine["count"])
 ```
 
-Caveats:
-- Struct arrays are not yet handled
-- Due to the non-free license of MATLAB, testing is on a best-effort basis
+Caveat: due to the non-free license of MATLAB, testing is on a best-effort basis

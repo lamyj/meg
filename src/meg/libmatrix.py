@@ -276,9 +276,9 @@ api = {
     
     # Structure
     "mxCreateStructMatrix": 
-        [[mwSize, mwSize, c_int_p, c_char_p_p], mxArray_p, library.fail_on_zero],
+        [[mwSize, mwSize, c_int, c_char_p_p], mxArray_p, library.fail_on_zero],
     "mxCreateStructArray":  
-        [[mwSize, mwSize_p, c_int_p, c_char_p_p], mxArray_p, library.fail_on_zero],
+        [[mwSize, mwSize_p, c_int, c_char_p_p], mxArray_p, library.fail_on_zero],
     "mxIsStruct": [[mxArray_p], c_bool],
     "mxGetField": 
         [[mxArray_p, mwIndex, c_char_p], mxArray_p, library.fail_on_zero],

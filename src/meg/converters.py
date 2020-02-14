@@ -5,9 +5,11 @@ def to_python(source):
     # WARNING: the module must be imported *after* the setup has taken place.
     from .libmatrix import (
         ClassID, mxArray_p, mxArrayToString, mxGetCell, mxGetClassID, mxGetData, 
-        mxGetDimensions, mxGetElementSize, mxGetImagData, mxGetLogicals, 
-        mxGetNumberOfDimensions, mxGetNumberOfElements, mxIsCell, mxIsChar, 
-        mxIsComplex, mxIsLogical, mxIsNumeric, mxIsScalar)
+        mxGetDimensions, mxGetElementSize, mxGetFieldByNumber, 
+        mxGetFieldNameByNumber, mxGetImagData, mxGetLogicals, 
+        mxGetNumberOfDimensions, mxGetNumberOfElements, mxGetNumberOfFields,
+        mxIsCell, mxIsChar, mxIsComplex, mxIsLogical, mxIsNumeric, mxIsScalar, 
+        mxIsStruct)
     
     # Only convert mxArray objects
     if not isinstance(source, mxArray_p):
@@ -16,7 +18,7 @@ def to_python(source):
     # Get the type of the array, return as-is if unknown
     class_id = mxGetClassID(source)
     dtypes = {
-        ClassID.CELL: object,
+        ClassID.CELL: object, ClassID.STRUCT: numpy.recarray,
         ClassID.LOGICAL: bool,
         ClassID.CHAR: bytes,
         ClassID.DOUBLE: numpy.double, ClassID.SINGLE: numpy.single,
@@ -76,6 +78,19 @@ def to_python(source):
         for index, location in enumerate(numpy.ndindex(result.shape[::-1])): 
             item = mxGetCell(source, index)
             result[location[::-1]] = to_python(item)
+    elif mxIsStruct(source):
+        fields = [
+            mxGetFieldNameByNumber(source, x) 
+            for x in range(mxGetNumberOfFields(source))]
+        dtype = [(x.decode(), object) for x in fields]
+        result = numpy.ndarray(shape, dtype)
+        for location_index, location in enumerate(numpy.ndindex(result.shape[::-1])):
+            for field_index, field in enumerate(fields):
+                item = mxGetFieldByNumber(source, location_index, field_index)
+                # FIXME: crashes when the item is empty
+                result[location[::-1]][field_index] = to_python(item)
+        if mxIsScalar(source):
+            result = dict(zip(result.dtype.names, result.ravel()[0]))
     else:
         result = source
     
@@ -85,8 +100,9 @@ def to_matlab(source):
     # WARNING: the module must be imported *after* the setup has taken place.
     from .libmatrix import (
         ClassID, Complexity, 
-        mwSize, mxCreateCellArray, mxCreateLogicalArray, mxCreateNumericArray, 
-        mxCreateString, mxGetData, mxGetImagData, mxSetCell)
+        mwSize, mxAddField, mxCreateCellArray, mxCreateLogicalArray, 
+        mxCreateNumericArray, mxCreateString, mxCreateStructArray, mxGetData, 
+        mxGetImagData, mxSetCell, mxSetField)
     
     array = numpy.array(source, ndmin=2)
     kind = array.dtype.kind
@@ -125,6 +141,20 @@ def to_matlab(source):
         data = mxGetData(result)
         buffer_ = array.real.tobytes("F")
         ctypes.memmove(data, buffer_, len(buffer_))
+    elif isinstance(source, dict) or array.dtype.names:
+        result = mxCreateStructArray(
+            array.ndim, array.ctypes.shape_as(mwSize), 0, None)
+        if isinstance(source, dict):
+            for name, value in source.items():
+                mxAddField(result, name.encode())
+                mxSetField(result, 0, name.encode(), to_matlab(value))
+        else:
+            for name in array.dtype.names:
+                mxAddField(result, name.encode())
+            for index, location in enumerate(numpy.ndindex(array.shape[::-1])):
+                item = array[location[::-1]]
+                for name, value in zip(array.dtype.names, item):
+                    mxSetField(result, index, name.encode(), to_matlab(value))
     elif kind == "O":
         result = mxCreateCellArray(array.ndim, array.ctypes.shape_as(mwSize))
         for index, location in enumerate(numpy.ndindex(array.shape[::-1])):

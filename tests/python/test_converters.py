@@ -73,6 +73,22 @@ class TestToPython(unittest.TestCase):
         
         self.assertEqual(m, True)
     
+    def test_struct_scalar(self):
+        meg.libengine.engEvalString(
+            self.engine, b"""
+                m = struct;
+                m.name = 'John Doe';
+                m.billing = 127.00;
+                m.test = [1,2,3; 4, 5, 6];""")
+        m = meg.libengine.engGetVariable(self.engine, b"m")
+        m = meg.converters.to_python(m)
+        
+        self.assertEqual(set(m.keys()), set(["name", "billing", "test"]))
+        self.assertEqual(m["name"], "John Doe")
+        self.assertEqual(m["billing"], 127.0)
+        numpy.testing.assert_array_equal(
+            m["test"], numpy.array([[1., 2., 3.], [4., 5., 6.]]))
+    
     def test_array_real(self):
         types = [
             "double", "single",
@@ -128,7 +144,7 @@ class TestToPython(unittest.TestCase):
         numpy.testing.assert_array_equal(
             m, [[True, False, False], [False, False, True]])
     
-    def test_cell(self):
+    def test_cell_array(self):
         meg.libengine.engEvalString(
             self.engine, b"m = {1, 2, 3; 'text', [4, 5; 6, 7], {8; 9; 10}}")
         m = meg.libengine.engGetVariable(self.engine, b"m")
@@ -141,6 +157,31 @@ class TestToPython(unittest.TestCase):
         
         self.assertEqual(m[1, 2].dtype, object)
         numpy.testing.assert_array_equal(m[1, 2], numpy.array([[8], [9], [10]]))
+    
+    def test_struct_array(self):
+        meg.libengine.engEvalString(
+            self.engine, b"""
+                m = struct;
+                m(1).name = 'John Doe';
+                m(1).billing = 127.00;
+                m(1).test = [1,2,3; 4, 5, 6];
+                m(2).name = 'Ann Lane';
+                m(2).billing = 28.50;
+                m(2).test = [7, 8; 9, 10; 11, 12];""")
+        m = meg.libengine.engGetVariable(self.engine, b"m")
+        m = meg.converters.to_python(m)
+        
+        self.assertEqual(
+            m.dtype, 
+            [("name", object), ("billing", object), ("test", object)])
+        numpy.testing.assert_array_equal(
+            m["name"], numpy.array([["John Doe", "Ann Lane"]]))
+        numpy.testing.assert_array_equal(
+            m["billing"], numpy.array([[127, 28.5]]))
+        numpy.testing.assert_array_equal(
+            m["test"][0,0], numpy.array([[1,2,3], [4,5,6]]))
+        numpy.testing.assert_array_equal(
+            m["test"][0,1], numpy.array([[7,8], [9,10], [11,12]]))
 
 class TestToMATLAB(unittest.TestCase):
     @classmethod
@@ -199,6 +240,19 @@ class TestToMATLAB(unittest.TestCase):
         p_2 = meg.converters.to_python(m)
         
         self.assertEqual(p_1, p_2)
+    
+    def test_struct_scalar(self):
+        p_1 = {
+            "name": "John Doe", "billing": 127.0, 
+            "test": [[1., 2., 3.], [4., 5., 6.]]}
+        m = meg.converters.to_matlab(p_1)
+        p_2 = meg.converters.to_python(m)
+        
+        self.assertEqual(set(p_2.keys()), set(["name", "billing", "test"]))
+        self.assertEqual(p_2["name"], "John Doe")
+        self.assertEqual(p_2["billing"], 127.0)
+        numpy.testing.assert_array_equal(
+            p_2["test"], numpy.array([[1., 2., 3.], [4., 5., 6.]]))
     
     def test_array_real(self):
         types = [
@@ -269,6 +323,29 @@ class TestToMATLAB(unittest.TestCase):
         
         self.assertEqual(p_2[1, 2].dtype, object)
         numpy.testing.assert_array_equal(p_2[1, 2], numpy.array([[8], [9], [10]]))
+    
+    def test_struct_array(self):
+        p_1 = numpy.array(
+            [
+                ("John Doe", 127, [[1,2,3], [4,5,6]]),
+                ("Ann Lane", 28.5, [[7,8], [9,10], [11,12]])
+            ],
+            [("name", object), ("billing", object), ("test", object)]
+        )
+        m = meg.converters.to_matlab(p_1)
+        p_2 = meg.converters.to_python(m)
         
+        self.assertEqual(
+            p_2.dtype, 
+            [("name", object), ("billing", object), ("test", object)])
+        numpy.testing.assert_array_equal(
+            p_2["name"], numpy.array([["John Doe", "Ann Lane"]]))
+        numpy.testing.assert_array_equal(
+            p_2["billing"], numpy.array([[127, 28.5]]))
+        numpy.testing.assert_array_equal(
+            p_2["test"][0,0], numpy.array([[1,2,3], [4,5,6]]))
+        numpy.testing.assert_array_equal(
+            p_2["test"][0,1], numpy.array([[7,8], [9,10], [11,12]]))
+    
 if __name__ == "__main__":
     unittest.main()
