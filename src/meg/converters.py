@@ -4,10 +4,10 @@ import numpy
 def to_python(source):
     # WARNING: the module must be imported *after* the setup has taken place.
     from .libmatrix import (
-        ClassID, mxArray_p, mxArrayToString, mxGetClassID, mxGetData, 
+        ClassID, mxArray_p, mxArrayToString, mxGetCell, mxGetClassID, mxGetData, 
         mxGetDimensions, mxGetElementSize, mxGetImagData, mxGetLogicals, 
-        mxGetNumberOfDimensions, mxGetNumberOfElements, mxIsChar, mxIsComplex, 
-        mxIsLogical, mxIsNumeric, mxIsScalar)
+        mxGetNumberOfDimensions, mxGetNumberOfElements, mxIsCell, mxIsChar, 
+        mxIsComplex, mxIsLogical, mxIsNumeric, mxIsScalar)
     
     # Only convert mxArray objects
     if not isinstance(source, mxArray_p):
@@ -16,6 +16,7 @@ def to_python(source):
     # Get the type of the array, return as-is if unknown
     class_id = mxGetClassID(source)
     dtypes = {
+        ClassID.CELL: object,
         ClassID.LOGICAL: bool,
         ClassID.CHAR: bytes,
         ClassID.DOUBLE: numpy.double, ClassID.SINGLE: numpy.single,
@@ -70,6 +71,11 @@ def to_python(source):
         result = numpy.ndarray(shape, dtype, buffer_, order="F")
         if mxIsScalar(source):
             result = result.ravel()[0]
+    elif mxIsCell(source):
+        result = numpy.ndarray(shape, dtype)
+        for index, location in enumerate(numpy.ndindex(result.shape[::-1])): 
+            item = mxGetCell(source, index)
+            result[location[::-1]] = to_python(item)
     else:
         result = source
     
@@ -79,8 +85,8 @@ def to_matlab(source):
     # WARNING: the module must be imported *after* the setup has taken place.
     from .libmatrix import (
         ClassID, Complexity, 
-        mwSize, mxCreateLogicalArray, mxCreateNumericArray, mxCreateString, 
-        mxGetData, mxGetImagData)
+        mwSize, mxCreateCellArray, mxCreateLogicalArray, mxCreateNumericArray, 
+        mxCreateString, mxGetData, mxGetImagData, mxSetCell)
     
     array = numpy.array(source, ndmin=2)
     kind = array.dtype.kind
@@ -110,13 +116,20 @@ def to_matlab(source):
             data = mxGetImagData(result)
             buffer_ = array.imag.tobytes("F")
             ctypes.memmove(data, buffer_, len(buffer_))
-    elif isinstance(source, (str, bytes)):
+    elif isinstance(source, bytes):
         result = mxCreateString(source)
+    elif isinstance(source, str):
+        result = mxCreateString(source.encode())
     elif kind == "b":
         result = mxCreateLogicalArray(array.ndim, array.ctypes.shape_as(mwSize))
         data = mxGetData(result)
         buffer_ = array.real.tobytes("F")
         ctypes.memmove(data, buffer_, len(buffer_))
+    elif kind == "O":
+        result = mxCreateCellArray(array.ndim, array.ctypes.shape_as(mwSize))
+        for index, location in enumerate(numpy.ndindex(array.shape[::-1])):
+            item = array[location[::-1]]
+            mxSetCell(result, index, to_matlab(item))
     else:
         raise NotImplementedError("Cannot convert {}".format(src))
     

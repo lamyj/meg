@@ -127,6 +127,20 @@ class TestToPython(unittest.TestCase):
         self.assertEqual(m.dtype, bool)
         numpy.testing.assert_array_equal(
             m, [[True, False, False], [False, False, True]])
+    
+    def test_cell(self):
+        meg.libengine.engEvalString(
+            self.engine, b"m = {1, 2, 3; 'text', [4, 5; 6, 7], {8; 9; 10}}")
+        m = meg.libengine.engGetVariable(self.engine, b"m")
+        m = meg.converters.to_python(m)
+        
+        self.assertEqual(m.dtype, object)
+        numpy.testing.assert_array_equal(m[0], [1, 2, 3])
+        self.assertEqual(m[1,0], "text")
+        numpy.testing.assert_array_equal(m[1, 1], [[4, 5], [6, 7]])
+        
+        self.assertEqual(m[1, 2].dtype, object)
+        numpy.testing.assert_array_equal(m[1, 2], numpy.array([[8], [9], [10]]))
 
 class TestToMATLAB(unittest.TestCase):
     @classmethod
@@ -237,5 +251,24 @@ class TestToMATLAB(unittest.TestCase):
         self.assertEqual(numpy.atleast_2d(p_1).dtype, p_2.dtype)
         numpy.testing.assert_array_equal(numpy.atleast_2d(p_1), p_2)
     
+    def test_cell(self):
+        p_1 = numpy.asarray(
+            [
+                [1, 2, 3],
+                [
+                    "text", numpy.array([[4, 5], [6, 7]]), 
+                    numpy.array([[8], [9], [10]], dtype=object)]],
+            dtype=object)
+        m = meg.converters.to_matlab(p_1)
+        p_2 = meg.converters.to_python(m)
+        
+        self.assertEqual(p_2.dtype, object)
+        numpy.testing.assert_array_equal(p_2[0], [1, 2, 3])
+        self.assertEqual(p_2[1,0], "text")
+        numpy.testing.assert_array_equal(p_2[1, 1], [[4, 5], [6, 7]])
+        
+        self.assertEqual(p_2[1, 2].dtype, object)
+        numpy.testing.assert_array_equal(p_2[1, 2], numpy.array([[8], [9], [10]]))
+        
 if __name__ == "__main__":
     unittest.main()

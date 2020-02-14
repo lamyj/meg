@@ -24,5 +24,5 @@ with meg.Engine() as engine:
 ```
 
 Caveats:
-- Cell and struct arrays are not yet handled
+- Struct arrays are not yet handled
 - Due to the non-free license of MATLAB, testing is on a best-effort basis
