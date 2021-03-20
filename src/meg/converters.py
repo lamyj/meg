@@ -41,7 +41,7 @@ def to_python(source):
     
     if mxIsNumeric(source):
         # https://www.mathworks.com/help/matlab/apiref/mxisnumeric.html
-        # Covers DOUBLE, SINGLE, INT* and UINT*
+        # Covers DOUBLE, SINGLE, INT* and UINT*
         
         # Build numpy array of real part
         real_data = mxGetData(source)
