@@ -8,7 +8,7 @@ long_description = open(os.path.join(here, "README.md")).read()
 
 setuptools.setup(
     name="meg",
-    version="0.2.0",
+    version="1.0.0",
     
     description="MATLAB engine connector",
     long_description=long_description,
