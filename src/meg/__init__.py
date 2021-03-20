@@ -5,6 +5,11 @@ from . import converters, library
 from .engine import Engine
 
 def setup(matlab_root=None):
+    # NOTE the check for /bin/csh is mandatory, since opening the engine calls:
+    #   execve("/bin/csh", ["/bin/csh", "-f", "-c", COMMAND])
+    # cf. `strace -s 128 -f python3 tests/python/test_engine.py`
+    if not os.path.exists("/bin/csh"):
+        raise Exception("/bin/csh does not exist")
     if matlab_root is None:
         for path in os.environ["PATH"].split(os.pathsep):
             matlab = os.path.join(path, "matlab")
@@ -23,4 +28,6 @@ try:
     setup()
 except Exception as e:
     print("WARNING: automatic set-up failed: {}".format(e))
-    print("Run `meg.setup` with your MATLAB root directory")
+    print(
+        "Run `meg.setup` with your MATLAB root directory "
+        "and make sure /bin/csh exists")
