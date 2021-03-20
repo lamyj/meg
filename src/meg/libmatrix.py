@@ -6,7 +6,8 @@ from ctypes import (
     c_uint8, c_uint16, c_uint32, c_uint64,
     c_void_p)
 import enum
-import pathlib
+import glob
+import os
 import sys
 
 from . import library
@@ -347,8 +348,8 @@ api = {
 
 from meg import matlab_root
 try:
-    path = next((pathlib.Path(matlab_root)/"bin"/"glnxa64").glob("libmx.*"))
+    path = glob.glob(os.path.join(matlab_root, "bin", "glnxa64", "libmx.*"))[0]
 except StopIteration:
-    path = next((pathlib.Path(matlab_root)/"bin"/"maci64").glob("libmx.*"))
+    path = glob.glob(os.path.join(matlab_root, "bin", "maci64", "libmx.*"))[0]
 lib = ctypes.CDLL(path)
 library.set_api(lib, api, sys.modules[__name__], ["_730", "_800"])

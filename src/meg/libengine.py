@@ -1,6 +1,7 @@
 import ctypes
 from ctypes import c_bool, c_char_p, c_int, c_void_p
-import pathlib
+import glob
+import os
 import sys
 
 from . import library
@@ -33,8 +34,8 @@ api = {
 
 from meg import matlab_root
 try:
-    path = next((pathlib.Path(matlab_root)/"bin"/"glnxa64").glob("libeng.*"))
+    path = glob.glob(os.path.join(matlab_root, "bin", "glnxa64", "libeng.*"))[0]
 except StopIteration:
-    path = next((pathlib.Path(matlab_root)/"bin"/"maci64").glob("libeng.*"))
+    path = glob.glob(os.path.join(matlab_root, "bin", "maci64", "libeng.*"))[0]
 lib = ctypes.CDLL(path)
 library.set_api(lib, api, sys.modules[__name__], ["_730"])
