@@ -42,5 +42,5 @@ setuptools.setup(
     package_dir={"meg": "src/meg"},
     
     python_requires=">=3.5",
-    install_requires=["numpy" if sys.version >= "3.5" else "numpy<=1.16.4"],
+    install_requires=["numpy"],
 )
